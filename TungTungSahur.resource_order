@@ -1,0 +1,8 @@
+{
+  "FolderOrderSettings":[],
+  "ResourceOrderSettings":[
+    {"name":"spr_ground_1","order":1,"path":"sprites/spr_ground_1/spr_ground_1.yy",},
+    {"name":"spr_hero_run_2","order":2,"path":"sprites/spr_hero_run_2/spr_hero_run_2.yy",},
+    {"name":"spr_hero_run11","order":1,"path":"sprites/spr_hero_run11/spr_hero_run11.yy",},
+  ],
+}
