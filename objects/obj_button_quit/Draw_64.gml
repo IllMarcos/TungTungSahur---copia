@@ -5,4 +5,4 @@ image_index = 1;
 draw_self();
 
 // Draw the exit icon.
-draw_sprite_ext(spr_exit_button, 0, x, y, image_xscale, image_yscale, image_angle, c_white, image_alpha);
+//draw_sprite_ext(spr_exit_button, 0, x, y, image_xscale, image_yscale, image_angle, c_white, image_alpha);

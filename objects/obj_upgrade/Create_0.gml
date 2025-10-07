@@ -1,16 +1,18 @@
-// Variable for upgrade data.
+// Datos de la carta
 upgrade_data = undefined;
 
-// Variables for moused state.
+// Estados del mouse
 mouse_over = false;
 is_clicked = false;
 
-// Global variable for if mouse is used.
+// Estado global de control
 global.is_mouse = false;
-
-// Variable for controller bypass.
 gamepad_bypass = false;
 
-// Variables used for hide reveal on upgrades.
+// Efecto reveal
 roll_life = 0;
 roll_alpha = 1;
+
+// Mensajes de error
+error_message = "";
+error_timer = 0;

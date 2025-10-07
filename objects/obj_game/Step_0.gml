@@ -1,148 +1,65 @@
- // If the game is NOT over...
-
+// If the game is NOT over...
 if (!instance_exists(obj_game_over))
-
 {
-
-// If the hero has run out of hitpoints...
-
-if (obj_hero.hitpoints <= 0)
-
-{
-
-// Destroy the player.
-
-with (obj_hero) instance_destroy();
-
-
-// Destroy any bullets.
-
-with (obj_hero_bullet) instance_destroy();
-
-
-// Destroy the enemies.
-
-with (obj_enemy) instance_destroy();
-
-
-// Destroy any xp pickups.
-
-with (obj_collectable) instance_destroy();
-
-
-// Destroy any health pickups.
-
-with (obj_heart) instance_destroy();
-
-
-// Pause all game function
-
-pause();
-
-
-// Create game over object.
-
-instance_create_layer(1920 / 2, 1080 / 2 - 150, "UpgradeScreen", obj_game_over);
-
+    // Si el héroe se queda sin vida
+    if (obj_hero.hitpoints <= 0)
+    {
+        // Destruir al jugador
+        with (obj_hero) instance_destroy();
+    
+        // Destruir balas
+        with (obj_hero_bullet) instance_destroy();
+    
+        // Destruir enemigos
+        with (obj_enemy) instance_destroy();
+    
+        // Destruir monedas (antes XP)
+        with (obj_collectable) instance_destroy();
+    
+        // Destruir corazones
+        with (obj_heart) instance_destroy();
+    
+        // Pausar todo
+        pause();
+        
+        // Crear pantalla de Game Over
+        instance_create_layer(1920 / 2, 1080 / 2 - 150, "UpgradeScreen", obj_game_over);
+    }
 }
 
-}
-
-
-
-// If the game is over...
-
-// We do this by checking is an end game screen is present.
-
+// ⚠️ Todo este bloque de upgrades automáticos ya no se usa, lo comentamos:
+/*
 if (!instance_exists(obj_upgrade) && !instance_exists(obj_template_complete))
-
 {
-
-// If we have reached the experience goal...
-
-if (global.xp >= global.xp_goal)
-
-{
-
-// Destroy the enemies.
-
-with (obj_enemy) instance_destroy();
-
-
-// Destroy any bullets.
-
-with (obj_hero_bullet) instance_destroy();
-
-
-// Destroy any xp pickups.
-
-with (obj_collectable) instance_destroy();
-
-
-// Destroy any health pickups.
-
-with (obj_heart) instance_destroy();
-
-
-// If we are on the last wave...
-
-if (global.level == 10)
-
-{
-
-// Create the upgrade screen.
-
-instance_create_layer(1920 / 2, 1080 / 2, "UpgradeScreen", obj_template_complete);
-
+    if (global.xp >= global.xp_goal)
+    {
+        with (obj_enemy) instance_destroy();
+        with (obj_hero_bullet) instance_destroy();
+        with (obj_collectable) instance_destroy();
+        with (obj_heart) instance_destroy();
+        
+        if (global.level == 10)
+        {
+            instance_create_layer(1920 / 2, 1080 / 2, "UpgradeScreen", obj_template_complete);
+        }
+        else
+        {
+            global.level += 1;
+            next_wave();
+            instance_create_layer(0, 0, "Instances", obj_upgrade_screen);
+        }
+    }
 }
+*/
 
-else
-
-{
-
-// Level up!
-
-global.level += 1;
-
-
-// Execute function to go to the next wave.
-
-next_wave();
-
-
-// Create the upgrade screen.
-
-instance_create_layer(0, 0, "Instances", obj_upgrade_screen);
-
-}
-
-}
-
-}
-
-
-
-// If the game is not currently paused...
-
+// ⚠️ También quitamos el spawner automático, ahora usas obj_enemy_spawner
+/*
 if (!global.paused)
-
 {
-
-// Reduce spawner cooldown timer.
-
-spawn_enemy_cooldown--;
-
-
-// Checks if spawner has expired.
-
-if (spawn_enemy_cooldown <= 0)
-
-{
-
-// Calls spawn enemy function.
-
-spawn_enemy();
-
+    spawn_enemy_cooldown--;
+    if (spawn_enemy_cooldown <= 0)
+    {
+        spawn_enemy();    
+    }
 }
-
-}
+*/

@@ -17,73 +17,53 @@ function weapon_trail_reset()
 // Define function to retrieve upgrades for the trail weapon.
 function weapon_trail_upgrades(_upgrade_list) 
 {
-	// Get wether the trail weapon is unlocked.
-	var _unlocked = ds_map_find_value(global.trail, "unlocked");
+    var _unlocked = ds_map_find_value(global.trail, "unlocked");
 
-	// If it is NOT unlocked...
-	if (!_unlocked)
-	{
-		// Create map to store upgrade.
-		var _map = ds_map_create();
-	
-		// Upgrade to unlock the trail weapon.
-		ds_map_replace(_map, "description", "Large but slow\narea of effect\nattack around\nthe player");
-		ds_map_replace(_map, "title", "UNLOCK");
-		ds_map_replace(_map, "object", global.trail);
-		ds_map_replace(_map, "key", "unlocked");
-		ds_map_replace(_map, "amount", 1);
-		ds_map_replace(_map, "icon", spr_trail_attack_big);
-		ds_map_replace(_map, "weapon_name", "TRAIL");
-	
-		// Add upgrade to the list.
-		ds_list_add(_upgrade_list, _map);
-		
-		// Exits the event.
-		exit;
-	}
+    if (!_unlocked)
+    {
+        var _map = ds_map_create();
+        ds_map_replace(_map, "description", "Large but slow\narea attack");
+        ds_map_replace(_map, "title", "UNLOCK");
+        ds_map_replace(_map, "object", global.trail);
+        ds_map_replace(_map, "key", "unlocked");
+        ds_map_replace(_map, "amount", 1);
+        ds_map_replace(_map, "icon", spr_trail_attack_big);
+        ds_map_replace(_map, "weapon_name", "TRAIL");
+        ds_map_replace(_map, "price", 10); // 💰 costo
 
-	// Get the current trail weapon attack speed.
-	var _attack_speed = ds_map_find_value(global.trail, "attack_speed");
+        ds_list_add(_upgrade_list, _map);
+        exit;
+    }
 
-	// If attack speed is over 30...
-	// Note this is a cooldown, so higher is slower.
-	if (_attack_speed > 30)
-	{
-		// Create map to store upgrade.
-		var _map = ds_map_create();
-	
-		// Upgrade to increase attack speed.
-		ds_map_replace(_map, "description", "Increase Attack Speed");
-		ds_map_replace(_map, "title", "SPEED");
-		ds_map_replace(_map, "object", global.trail);
-		ds_map_replace(_map, "key", "attack_speed");
-		ds_map_replace(_map, "amount", -15);
-		ds_map_replace(_map, "icon", spr_trail_attack_big);
-		ds_map_replace(_map, "weapon_name", "TRAIL");
-	
-		// Add upgrade to the list.
-		ds_list_add(_upgrade_list, _map);
-	}
+    var _attack_speed = ds_map_find_value(global.trail, "attack_speed");
+    if (_attack_speed > 30)
+    {
+        var _map = ds_map_create();
+        ds_map_replace(_map, "description", "Increase Attack Speed");
+        ds_map_replace(_map, "title", "SPEED");
+        ds_map_replace(_map, "object", global.trail);
+        ds_map_replace(_map, "key", "attack_speed");
+        ds_map_replace(_map, "amount", -15);
+        ds_map_replace(_map, "icon", spr_trail_attack_big);
+        ds_map_replace(_map, "weapon_name", "TRAIL");
+        ds_map_replace(_map, "price", 15); // 💰 costo
 
-	// Get current trail weapon damage.
-	var _damage = ds_map_find_value(global.trail, "damage");
+        ds_list_add(_upgrade_list, _map);
+    }
 
-	// If damage is under 5...
-	if (_damage < 5)
-	{
-		// Create map to store upgrade.
-		var _map = ds_map_create();
-	
-		// Upgrade from increasing trail weapon damage.
-		ds_map_replace(_map, "description", "Increase Damage");
-		ds_map_replace(_map, "title", "DAMAGE");
-		ds_map_replace(_map, "object", global.trail);
-		ds_map_replace(_map, "key", "damage");
-		ds_map_replace(_map, "amount", 1);
-		ds_map_replace(_map, "icon", spr_trail_attack_big);
-		ds_map_replace(_map, "weapon_name", "TRAIL");
-	
-		// Add upgrade to the list.
-		ds_list_add(_upgrade_list, _map);
-	}
+    var _damage = ds_map_find_value(global.trail, "damage");
+    if (_damage < 5)
+    {
+        var _map = ds_map_create();
+        ds_map_replace(_map, "description", "Increase Damage");
+        ds_map_replace(_map, "title", "DAMAGE");
+        ds_map_replace(_map, "object", global.trail);
+        ds_map_replace(_map, "key", "damage");
+        ds_map_replace(_map, "amount", 1);
+        ds_map_replace(_map, "icon", spr_trail_attack_big);
+        ds_map_replace(_map, "weapon_name", "TRAIL");
+        ds_map_replace(_map, "price", 20); // 💰 costo
+
+        ds_list_add(_upgrade_list, _map);
+    }
 }

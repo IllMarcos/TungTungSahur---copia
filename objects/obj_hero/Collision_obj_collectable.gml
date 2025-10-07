@@ -1,5 +1,10 @@
+
+// Ahora
+global.coins += 1;
+
+
 // Increment experience.
-global.xp += 1;
+//global.xp += 1;
 
 // Choose a random pickup sound effect.
 var _sound = choose(snd_pickup_1, snd_pickup_2, snd_pickup_3);

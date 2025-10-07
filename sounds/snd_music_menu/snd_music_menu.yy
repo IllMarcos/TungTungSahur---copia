@@ -9,7 +9,7 @@
   "bitRate":128,
   "compression":0,
   "conversionMode":0,
-  "duration":60.0,
+  "duration":15.56898,
   "name":"snd_music_menu",
   "parent":{
     "name":"Music",
@@ -19,7 +19,7 @@
   "resourceType":"GMSound",
   "resourceVersion":"2.0",
   "sampleRate":44100,
-  "soundFile":"snd_music_menu.ogg",
+  "soundFile":"snd_music_menu.mp3",
   "type":0,
-  "volume":1.0,
+  "volume":0.4,
 }

@@ -1,56 +1,38 @@
-// Checks if glow highlight should show.
-if (mouse_over)
-{
-	// Draws the glow highlight.
-	draw_sprite(spr_card_glow, 0, x, y);
+// Fondo de la carta
+draw_set_colour(make_colour_rgb(70,70,90));
+draw_set_alpha(0.9);
+draw_roundrect(x - 150, y - 220, x + 150, y + 220, false);
+
+// Glow si está seleccionada
+if (mouse_over) {
+    draw_set_colour(c_white);
+    draw_set_alpha(0.2);
+    draw_roundrect(x - 160, y - 230, x + 160, y + 230, false);
 }
 
-// Draws the upgrade object.
-draw_self();
+// Icono
+draw_sprite(upgrade_data[? "icon"], 0, x, y - 120);
 
-// Checks if the upgrade has been set.
-if (upgrade_data == undefined)
-{
-	// Exits the event.
-	exit;
-}
-
-// Set the upgrade font.
-draw_set_font(fnt_medium);
-
-// Reset text alignments
-draw_set_halign(fa_center);
-draw_set_valign(fa_middle);
-
-// Set the font colour.
-draw_set_colour($41d7ff);
-
-// Draw the upgrade text.
-draw_text(x, y + 185, string(upgrade_data[? "title"]));
-
-// Reset color to white.
-draw_set_colour(c_white);
-
-// Set the upgrade font.
+// Nombre
 draw_set_font(fnt_card_name);
+draw_set_colour(c_white);
+draw_set_halign(fa_center);
+draw_text(x, y - 20, string(upgrade_data[? "weapon_name"]));
 
-// Draw the upgrade text.
-draw_text(x, y - 50, string(upgrade_data[? "weapon_name"]));
-
-// Set the upgrade font.
+// Descripción
 draw_set_font(fnt_card_description);
+draw_set_colour(c_gray);
+draw_text(x, y + 30, string(upgrade_data[? "description"]));
 
-// Draw the upgrade text.
-draw_text(x, y + 40, string(upgrade_data[? "description"]));
+// Precio
+draw_set_font(fnt_medium);
+if (global.coins >= upgrade_data[? "price"]) {
+    draw_set_colour(c_lime);
+} else {
+    draw_set_colour(c_red);
+}
+draw_text(x, y + 120, "Costo: " + string(upgrade_data[? "price"]) + " 🪙");
 
-// Draw the upgrade icon.
-draw_sprite(upgrade_data[? "icon"], 0, x, y - 200);
-
-// Set draw alpha.
-draw_set_alpha(roll_alpha);
-
-// Draw sprite.
-draw_sprite(spr_upgrade_hide, 0, x, y);
-
-// Reset alpha to opaque.
-draw_set_alpha(1);
+// Reset
+draw_set_colour(c_white);
+draw_set_halign(fa_left);

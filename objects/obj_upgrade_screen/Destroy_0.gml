@@ -1,2 +1,2 @@
-// Unpause the game
+// Reanudar el juego
 unpause();

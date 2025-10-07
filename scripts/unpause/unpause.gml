@@ -1,16 +1,19 @@
 // Declare unpause function.
 function unpause() 
 {
-	// Unpause.
-	global.paused = false;
+    global.paused = false;
 
-	// Apply to all instances.
-	with (all) 
-	{	
-		// Set speed to saved speed.
-		speed = paused_speed;
-	
-		// Set animation speed to saved value.
-		image_speed = paused_animation;
-	}
+    with (all) 
+    {
+        // Restaura solo si la instancia tiene las variables
+        if (variable_instance_exists(id, "paused_speed"))
+        {
+            speed = paused_speed;
+        }
+
+        if (variable_instance_exists(id, "paused_animation"))
+        {
+            image_speed = paused_animation;
+        }
+    }
 }
