@@ -11,3 +11,4 @@ player_sockets = ds_map_create(); // Mapea Socket de red -> ID de jugador
 player_count = 0;
 
 client_ip_promise = -1; // Para la entrada de texto asíncrona (join)
+local_hero_reference = noone;
