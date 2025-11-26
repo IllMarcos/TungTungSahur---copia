@@ -9,7 +9,7 @@
   "bitRate":128,
   "compression":0,
   "conversionMode":0,
-  "duration":0.326521,
+  "duration":0.32650793,
   "name":"snd_pickup_2",
   "parent":{
     "name":"Sounds",

@@ -1,16 +1,10 @@
-// ======================== 
-// Draw GUI del obj_hero 
-// ========================
-
 // Si el juego está en pausa, no dibujamos nada
 if (global.paused) {
     exit;
 }
 
 
-// =====================
-// JOYSTICK FIJO (abajo izquierda)
-// =====================
+// JOYSTICK
 var joy_x = 250;
 var joy_y = display_get_gui_height() - 250;
 var joy_radius = 200;
@@ -18,9 +12,8 @@ var joy_radius = 200;
 // Dibujar base del joystick
 draw_sprite(spr_joystick_big, 0, joy_x, joy_y);
 
-// =====================
+
 // Dibujar palanca (thumb)
-// =====================
 if (mouse_check_button(mb_left)) {
     var dx = device_mouse_x_to_gui(0) - joy_x;
     var dy = device_mouse_y_to_gui(0) - joy_y;

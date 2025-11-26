@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"player_movement_capture",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"player_movement_capture",
+  "parent":{
+    "name":"Scripts",
+    "path":"folders/Scripts.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

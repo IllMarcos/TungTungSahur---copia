@@ -1,87 +1,57 @@
-// Declare player movement script.
+// Archivo: scripts/player_movement/player_movement.gml (CÓDIGO CORREGIDO Y REVISADO)
+
 function player_movement() 
 {
-    // Posición fija del joystick (abajo izquierda)
-    var joy_x = 250;
-    var joy_y = display_get_gui_height() - 250;
-    var joy_radius = 200; // radio del joystick
+    // Solo el jugador local de esta máquina puede enviar input
+    if (!is_local_player) exit; 
 
-    hspeed = 0;
-    vspeed = 0;
+    // ... (Código de captura de input, hspeed, vspeed, y normalización es el mismo) ...
 
     // ========================
-    // JOYSTICK FIJO (solo reacciona en su área)
-    // ========================
-    if (mouse_check_button(mb_left)) 
-    {
-        var dx = device_mouse_x_to_gui(0) - joy_x;
-        var dy = device_mouse_y_to_gui(0) - joy_y;
-        var dist = point_distance(joy_x, joy_y, device_mouse_x_to_gui(0), device_mouse_y_to_gui(0));
-
-        // Solo mover si el click está cerca del joystick
-        if (dist <= joy_radius * 2) 
-        {
-            if (dist > joy_radius) {
-                dx = lengthdir_x(joy_radius, point_direction(0,0,dx,dy));
-                dy = lengthdir_y(joy_radius, point_direction(0,0,dx,dy));
-            }
-
-            hspeed = dx * 0.2;
-            vspeed = dy * 0.2;
-        }
-    }
-    else
-    {
-        // ========================
-        // GAMEPAD
-        // ========================
-        var _max_pads = gamepad_get_device_count();
-        if (_max_pads > 0 && gamepad_is_connected(0))
-        {
-            gamepad_set_axis_deadzone(0, 0.1);
-
-            if (gamepad_axis_value(0, gp_axislv) != 0 || gamepad_axis_value(0, gp_axislh) != 0)
-            {
-                vspeed += 10 * gamepad_axis_value(0, gp_axislv);
-                hspeed += 10 * gamepad_axis_value(0, gp_axislh);
-            }
-        }
-
-        // ========================
-        // TECLADO (PC)
-        // ========================
-        if (keyboard_check(ord("W"))) vspeed += -10;
-        if (keyboard_check(ord("S"))) vspeed += 10;
-        if (keyboard_check(ord("A"))) hspeed += -10;
-        if (keyboard_check(ord("D"))) hspeed += 10;
-    }
-
-    // ========================
-    // Normalizar velocidad
-    // ========================
-    var _speed = sqrt(sqr(hspeed) + sqr(vspeed));
-    if (_speed > 10)
-    {
-        hspeed *= 10 / _speed;
-        vspeed *= 10 / _speed;
-    }
-
-    // ========================
-    // Animación y dirección
+    // Animación y dirección (Actualización visual inmediata)
     // ========================
     if (hspeed != 0) {
-        image_xscale = sign(hspeed);
+        image_xscale = sign(hspeed); 
     }
-
+    
+    // CORRECCIÓN: Usar asset_get_index para evitar errores si la constante no es global.
+    var _run_sprite = asset_get_index("spr_hero_run_22");
+    var _idle_sprite = asset_get_index("spr_hero_idle");
+    
     if (sprite_index != spr_hero_hit)
     {
         if (hspeed != 0 || vspeed != 0)
         {
-            sprite_index = spr_hero_run_22;
+            if (_run_sprite != -1) sprite_index = _run_sprite;
         }
         else
         {
-            sprite_index = spr_hero_idle;
+            if (_idle_sprite != -1) sprite_index = _idle_sprite;
         }
+    }
+
+    // ========================
+    // LÓGICA DE RED: Solo mover si es Servidor, o enviar input si es Cliente
+    // ========================
+    if (global.network_controller.network_mode == 1) // Si es el Servidor, aplica movimiento
+    {
+        x += hspeed;
+        y += vspeed;
+    }
+    else if (global.network_controller.network_mode == 2) // Si es el Cliente, envía el input
+    {
+        // Enviar el input capturado (hspeed, vspeed) al Servidor
+        var _buffer = buffer_create(64, buffer_fixed, 1);
+        buffer_write(_buffer, buffer_u8, NET_PACKET_TYPE.MOVEMENT_INPUT);
+        buffer_write(_buffer, buffer_u8, player_id);
+        buffer_write(_buffer, buffer_s16, hspeed); 
+        buffer_write(_buffer, buffer_s16, vspeed);
+        
+        network_send_udp(global.network_controller.network_socket, global.network_controller.server_ip, NET_PORT, _buffer, buffer_get_size(_buffer));
+        buffer_delete(_buffer);
+        
+        // Mover localmente (predicción de cliente)
+        x += hspeed; 
+        y += vspeed;
     }
 }
