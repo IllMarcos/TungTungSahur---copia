@@ -46,12 +46,11 @@ _btn_join.height = 60;
 
 _btn_join.action_script = function() 
 {
-    var _ip = get_string("IP del Host (127.0.0.1 para local):", "127.0.0.1");
-    if (_ip != "")
-    {
-        global.network_controller.network_mode = 2;
-        global.network_controller.server_ip = _ip;
-        global.network_controller.network_socket = network_create_socket(network_socket_udp);
-        room_goto(rm_game);
-    }
+    // Usamos get_string_ASYNC para que funcione en Android/iOS sin congelar el juego
+    // Guardamos el "ID" del pedido en la variable del controlador
+    var _mensaje = "Escribe la IP del Host (Ej: 192.168.1.X):";
+    var _ip_defecto = "192.168.1."; 
+    
+    // IMPORTANTE: Asignamos esto a la variable que ya preparaste en el controlador
+    global.network_controller.client_ip_promise = get_string_async(_mensaje, _ip_defecto);
 };

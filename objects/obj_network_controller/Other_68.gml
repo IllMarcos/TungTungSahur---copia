@@ -7,14 +7,13 @@ var _id = ds_map_find_value(async_load, "id");
 // =========================================================================
 // 1. OBTENER IDENTIFICACIÓN DEL REMITENTE (CRUCIAL PARA UDP)
 // =========================================================================
-// En UDP, 'id' es siempre nuestro propio socket. Para saber quién nos habla,
-// necesitamos su IP y Puerto.
+// En UDP, 'id' es siempre nuestro propio socket.
+// Para saber quién nos habla, necesitamos su IP y Puerto.
 var _sender_ip = ds_map_find_value(async_load, "ip");
 var _sender_port = ds_map_find_value(async_load, "port");
 
 // Creamos una "Clave Única" para este cliente (Ej: "192.168.1.50:54321")
 var _client_key = string(_sender_ip) + ":" + string(_sender_port);
-
 
 // =========================================================================
 // 2. PROCESAMIENTO DE DATOS
@@ -31,7 +30,7 @@ if (_type == network_type_data && !is_undefined(_buffer))
     {
         // Buscamos si ya conocemos a este cliente por su clave IP:Puerto
         var _p_id = ds_map_find_value(player_sockets, _client_key);
-        
+
         // --- CASO 1: NUEVA CONEXIÓN ---
         if (_packet_type == NET_PACKET_TYPE.CONNECT_REQUEST)
         {
@@ -45,7 +44,7 @@ if (_type == network_type_data && !is_undefined(_buffer))
                 player_count++;
                 
                 show_debug_message("SERVIDOR: Cliente aceptado. Key: " + _client_key + " -> ID: " + string(_new_id));
-                
+
                 // 1. Responder al cliente (Aceptación)
                 var _buff_resp = buffer_create(32, buffer_fixed, 1);
                 buffer_write(_buff_resp, buffer_u8, NET_PACKET_TYPE.CONNECT_ACCEPT);
@@ -97,6 +96,9 @@ if (_type == network_type_data && !is_undefined(_buffer))
         {
             var _assigned_id = buffer_read(_buffer, buffer_u8);
             
+            // >>> NUEVO: Guardar mi ID en el controlador para no olvidarlo al cambiar de Room <<<
+            client_id = _assigned_id;
+            
             // Intentar usar la referencia guardada en el Room Start (identidad segura)
             if (variable_instance_exists(id, "local_hero_reference") && instance_exists(local_hero_reference))
             {
@@ -137,11 +139,11 @@ if (_type == network_type_data && !is_undefined(_buffer))
                     {
                         _found = true;
                         
-                        // >>> AQUÍ ESTÁ LA MAGIA DEL MOVIMIENTO FLUIDO <<<
+                        // >>> LÓGICA DE MOVIMIENTO SUAVE <<<
                         if (is_local_player) 
                         {
                             // SI SOY YO: Solo acepto la posición del servidor si estoy MUY lejos (Lagazo)
-                            // Si la diferencia es pequeña, ignoro al servidor y confío en mi movimiento local.
+                            // Si la diferencia es pequeña, ignoro al servidor y confío en mi predicción local.
                             if (point_distance(x, y, _ux, _uy) > 50) {
                                 x = _ux;
                                 y = _uy;
