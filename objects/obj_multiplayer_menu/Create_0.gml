@@ -1,39 +1,57 @@
-// Archivo: obj_multiplayer_menu/Create_0.gml (COMPLETO)
+// Archivo: objects/obj_multiplayer_menu/Create_0.gml
 
-// Crear el controlador de red (solo si no existe, y solo en la capa "Instances" o "GUI")
-if (!instance_exists(obj_network_controller))
-{
+// 1. Crear el controlador si no existe
+if (!instance_exists(obj_network_controller)) {
     instance_create_layer(0, 0, "Instances", obj_network_controller);
 }
+
+// =========================================================
+// 2. CORRECCIÓN DEL ERROR: ASIGNAR VARIABLE GLOBAL
+// =========================================================
+// Buscamos el objeto y lo guardamos en la variable global
 global.network_controller = instance_find(obj_network_controller, 0);
 
-// Usar coordenadas de pantalla GUI para centrado
-var _mid_x = display_get_gui_width() / 2;
-var _mid_y = display_get_gui_height() / 2;
-var _spacing = 100;
 
-// Botón para iniciar como Servidor (TungTung1)
-var _host_btn = instance_create_layer(_mid_x, _mid_y - _spacing, "GUI", obj_button);
-_host_btn.my_text = "HOST (TungTung1)";
-_host_btn.my_script = function()
+// --- CONFIGURACIÓN DE INTERFAZ ---
+var _margin_left = 160; 
+var _margin_top = 80;   
+var _sep = 100;         
+
+// --- BOTÓN 1: HOST ---
+var _btn_host = instance_create_layer(_margin_left, _margin_top, "Instances", obj_button);
+_btn_host.button_text = "CREAR SALA (HOST)";
+_btn_host.width = 280;
+_btn_host.height = 60;
+
+_btn_host.action_script = function() 
 {
+    // Ahora esta línea ya no dará error porque la variable existe
     global.network_controller.network_mode = 1;
-    // Crear socket UDP para el servidor (soporta 2 clientes/jugadores)
-    global.network_controller.network_socket = network_create_server(network_socket_udp, NET_PORT, MAX_PLAYERS);
     
-    // Crear el héroe local (TungTung1).
-    instance_create_layer(room_width/2, room_height/2, "Instances", obj_hero);
+    // Crear Servidor UDP
+    global.network_controller.network_socket = network_create_server(network_socket_udp, 6510, 2);
     
-    // Asumimos que su sala de juego se llama rm_game
-    room_goto(rm_game); 
+    if (global.network_controller.network_socket < 0) {
+        show_message("Error al crear servidor. ¿Puerto ocupado?");
+    } else {
+        room_goto(rm_game); 
+    }
 };
 
-// Botón para iniciar como Cliente (TungTung2)
-var _client_btn = instance_create_layer(_mid_x, _mid_y + _spacing, "GUI", obj_button);
-_client_btn.my_text = "JOIN (TungTung2)";
-_client_btn.my_script = function()
+// --- BOTÓN 2: JOIN ---
+var _btn_join = instance_create_layer(_margin_left, _margin_top + _sep, "Instances", obj_button);
+_btn_join.button_text = "UNIRSE A IP";
+_btn_join.width = 280;
+_btn_join.height = 60;
+
+_btn_join.action_script = function() 
 {
-    // Usamos get_string_async para que el juego no se bloquee.
-    // Guardamos la promesa del ID para el evento Async - Dialog.
-    global.network_controller.client_ip_promise = get_string_async("IP del Host (ej: 192.168.1.10)", "127.0.0.1"); 
+    var _ip = get_string("IP del Host (127.0.0.1 para local):", "127.0.0.1");
+    if (_ip != "")
+    {
+        global.network_controller.network_mode = 2;
+        global.network_controller.server_ip = _ip;
+        global.network_controller.network_socket = network_create_socket(network_socket_udp);
+        room_goto(rm_game);
+    }
 };

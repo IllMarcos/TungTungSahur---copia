@@ -1,22 +1,18 @@
-// Archivo: objects/obj_network_controller/Other_68.gml (Async - Network)
-
+// Archivo: objects/obj_network_controller/Other_68.gml
 var _id = ds_map_find_value(async_load, "id");
 var _type = ds_map_find_value(async_load, "type");
 var _buffer = ds_map_find_value(async_load, "buffer");
 
-// Manejo de Desconexión y Errores (no es necesario leer el buffer aquí)
-if (_type == network_type_none || _type == network_type_disconnect)
+if (_type == network_type_disconnect)
 {
-    // Lógica de desconexión: Si el socket se desconecta, elimine al jugador del mapa.
-    var _player_id_to_remove = ds_map_find_value(global.network_controller.player_sockets, _id);
+    var _player_id_to_remove = ds_map_find_value(player_sockets, _id);
     if (!is_undefined(_player_id_to_remove))
     {
-        ds_map_delete(global.network_controller.player_sockets, _id);
-        
-        // Opcional: Eliminar la instancia del héroe que se desconectó
+        ds_map_delete(player_sockets, _id);
         with(obj_hero)
         {
-            if (player_id == _player_id_to_remove)
+            // CORRECCIÓN: Usar net_player_id
+            if (variable_instance_exists(id, "net_player_id") && net_player_id == _player_id_to_remove)
             {
                 instance_destroy();
             }
@@ -25,140 +21,108 @@ if (_type == network_type_none || _type == network_type_disconnect)
     exit;
 }
 
-// =========================================================================
-// PROCESAMIENTO DE DATOS (network_type_data)
-// =========================================================================
 if (_type == network_type_data && !is_undefined(_buffer))
 {
-    // CORRECCIÓN: buffer_seek requiere 3 argumentos
-    buffer_seek(_buffer, buffer_seek_start, 0); 
+    buffer_seek(_buffer, buffer_seek_start, 0);
     var _packet_type = buffer_read(_buffer, buffer_u8);
 
-    if (network_mode == 1) // Lógica del SERVIDOR
+    // --- SERVIDOR ---
+    if (network_mode == 1) 
     {
-        var _client_socket_id = _id;
-        var _p_id = ds_map_find_value(global.network_controller.player_sockets, _client_socket_id);
+        var _client_socket = _id;
+        var _p_id = ds_map_find_value(player_sockets, _client_socket);
         
-        // -------------------------------------------------------------
-        // A. MANEJO DE NUEVA CONEXIÓN (Servidor recibe la solicitud)
-        // -------------------------------------------------------------
+        // 1. Solicitud de conexión
         if (_packet_type == NET_PACKET_TYPE.CONNECT_REQUEST)
         {
-            if (is_undefined(_p_id)) // Solo si el socket NO está registrado aún
+            // Solo si no lo conocemos ya
+            if (is_undefined(_p_id) && player_count < MAX_PLAYERS)
             {
-                if (global.network_controller.player_count < MAX_PLAYERS)
-                {
-                    var _new_player_id = global.network_controller.player_count;
-                    global.network_controller.player_sockets[? _client_socket_id] = _new_player_id; // Registrar el socket -> ID
-                    global.network_controller.player_count++;
-                    
-                    // 1. Enviar ID de vuelta al nuevo cliente
-                    var _buffer_out = buffer_create(64, buffer_fixed, 1);
-                    buffer_write(_buffer_out, buffer_u8, NET_PACKET_TYPE.CONNECT_ACCEPT);
-                    buffer_write(_buffer_out, buffer_u8, _new_player_id); 
-                    network_send_packet(network_socket, _client_socket_id, _buffer_out, buffer_get_size(_buffer_out));
-                    buffer_delete(_buffer_out);
-                    
-                    // 2. Crear una instancia del héroe para el nuevo jugador (TungTung2)
-                    var _hero = instance_create_layer(room_width / 2 + 100, room_height / 2, "Instances", obj_hero);
-                    _hero.player_id = _new_player_id; 
-                    _hero.is_local_player = false; 
-                }
+                var _new_id = player_count;
+                player_sockets[? _client_socket] = _new_id;
+                player_count++;
+                
+                // Responder al cliente
+                var _buff_resp = buffer_create(32, buffer_fixed, 1);
+                buffer_write(_buff_resp, buffer_u8, NET_PACKET_TYPE.CONNECT_ACCEPT);
+                buffer_write(_buff_resp, buffer_u8, _new_id);
+                network_send_udp(_client_socket, server_ip, NET_PORT, _buff_resp, buffer_tell(_buff_resp));
+                buffer_delete(_buff_resp);
+                
+                // Crear el héroe en el servidor
+                var _h = instance_create_layer(room_width/2, room_height/2, "Instances", obj_hero);
+                // --- ¡AQUÍ ESTABA EL POSIBLE ERROR! ---
+                _h.net_player_id = _new_id; // Usamos net_player_id, NO player_id
+                _h.is_local_player = false;
+                show_debug_message("Nuevo Cliente conectado. ID asignada: " + string(_new_id));
             }
         }
-        
-        // -------------------------------------------------------------
-        // B. MANEJO DE DATOS RECIBIDOS (Movimiento y ataques)
-        // -------------------------------------------------------------
-        else if (!is_undefined(_p_id)) // Procesar solo si el jugador ya está identificado
+        // 2. Input de movimiento
+        else if (_packet_type == NET_PACKET_TYPE.MOVEMENT_INPUT && !is_undefined(_p_id))
         {
-            if (_packet_type == NET_PACKET_TYPE.MOVEMENT_INPUT)
+            var _id_recv = buffer_read(_buffer, buffer_u8);
+            var _move_h = buffer_read(_buffer, buffer_s16);
+            var _move_v = buffer_read(_buffer, buffer_s16);
+            
+            with(obj_hero)
             {
-                // Leemos los datos de movimiento (ya se leyó el tipo de paquete y el ID del jugador que envía el paquete)
-                var _hspeed_in = buffer_read(_buffer, buffer_s16);
-                var _vspeed_in = buffer_read(_buffer, buffer_s16);
-                
-                // Aplicar input al personaje correcto y moverlo
-                with(obj_hero)
+                if (net_player_id == _p_id)
                 {
-                    if (player_id == _p_id) // Usamos el ID identificado por el socket
-                    {
-                        hspeed = _hspeed_in;
-                        vspeed = _vspeed_in;
-                        x += hspeed;
-                        y += vspeed;
-                        keep_in_room(); 
-                        
-                        // Sincronizar apariencia (CORRECCIÓN DE REFERENCIA DE SPRITE)
-                        if (hspeed != 0) image_xscale = sign(hspeed);
-                        
-                        var _run_sprite = asset_get_index("spr_hero_run_22");
-                        var _idle_sprite = asset_get_index("spr_hero_idle"); 
-                        
-                        if (hspeed != 0 || vspeed != 0) 
-                        {
-                            if (_run_sprite != -1) sprite_index = _run_sprite;
-                        }
-                        else 
-                        {
-                            if (_idle_sprite != -1) sprite_index = _idle_sprite;
-                        }
-                    }
+                    if (place_free(x + _move_h, y)) x += _move_h;
+                    if (place_free(x, y + _move_v)) y += _move_v;
+                    if (_move_h != 0) image_xscale = sign(_move_h);
                 }
-            }
-            else if (_packet_type == NET_PACKET_TYPE.ATTACK_REQUEST)
-            {
-                 // Lógica de ataque aquí (usando _p_id para identificar quién atacó)
             }
         }
     }
-
-    else if (network_mode == 2) // Lógica del CLIENTE
+    // --- CLIENTE ---
+    else if (network_mode == 2) 
     {
         if (_packet_type == NET_PACKET_TYPE.CONNECT_ACCEPT)
         {
-            client_id = buffer_read(_buffer, buffer_u8);
-            
-            // Asignar ID al héroe local (TungTung2)
-            var _local_hero = instance_find(obj_hero, 0); 
-            if (instance_exists(_local_hero))
+            var _assigned_id = buffer_read(_buffer, buffer_u8);
+            var _hero = instance_find(obj_hero, 0);
+            if (instance_exists(_hero))
             {
-                _local_hero.player_id = client_id;
-                _local_hero.is_local_player = true;
+                _hero.net_player_id = _assigned_id;
+                _hero.is_local_player = true;
+                show_debug_message("¡Conectado! Mi ID es: " + string(_assigned_id));
             }
         }
         else if (_packet_type == NET_PACKET_TYPE.PLAYER_STATE_UPDATE)
         {
-            // Actualizar la posición y el estado de todos los jugadores
-            while (buffer_get_size(_buffer) - buffer_tell(_buffer) > 0)
+            // Leer todos los jugadores del paquete
+            while(buffer_tell(_buffer) < buffer_get_size(_buffer))
             {
-                var _p_id = buffer_read(_buffer, buffer_u8);
-                var _p_x = buffer_read(_buffer, buffer_s16);
-                var _p_y = buffer_read(_buffer, buffer_s16);
-                var _p_xscale = buffer_read(_buffer, buffer_s8);
-                var _p_sprite = buffer_read(_buffer, buffer_string);
-                var _p_image_index = buffer_read(_buffer, buffer_f32);
+                var _uid = buffer_read(_buffer, buffer_u8);
+                var _ux = buffer_read(_buffer, buffer_s16);
+                var _uy = buffer_read(_buffer, buffer_s16);
+                var _uscale = buffer_read(_buffer, buffer_s8);
+                var _usprite_name = buffer_read(_buffer, buffer_string);
+                var _uindex = buffer_read(_buffer, buffer_f32);
                 
-                with(obj_hero)
-                {
-                    if (player_id == _p_id)
-                    {
-                        // Si es el jugador remoto, forzamos su posición
-                        if (!is_local_player) 
-                        {
-                            x = lerp(x, _p_x, 0.2); 
-                            y = lerp(y, _p_y, 0.2);
+                // Buscar si ya existe este personaje
+                var _found = false;
+                with(obj_hero) {
+                    if (net_player_id == _uid) {
+                        _found = true;
+                        // Actualizar posición (si no soy yo)
+                        if (!is_local_player) {
+                            x = lerp(x, _ux, 0.3);
+                            y = lerp(y, _uy, 0.3);
+                            image_xscale = _uscale;
+                            var _spr = asset_get_index(_usprite_name);
+                            if (_spr > -1) sprite_index = _spr;
+                            image_index = _uindex;
                         }
-                        
-                        // Sincronizar apariencia para todos los héroes
-                        image_xscale = _p_xscale;
-                        var _sprite_asset = asset_get_index(_p_sprite);
-                        if (_sprite_asset != -1) 
-                        {
-                            sprite_index = _sprite_asset;
-                        }
-                        image_index = _p_image_index;
                     }
+                }
+                
+                // --- IMPORTANTE: SI NO EXISTE, LO CREAMOS ---
+                if (!_found) {
+                    var _new_h = instance_create_layer(_ux, _uy, "Instances", obj_hero);
+                    _new_h.net_player_id = _uid;
+                    _new_h.is_local_player = false;
                 }
             }
         }

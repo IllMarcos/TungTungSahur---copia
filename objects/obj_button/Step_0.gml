@@ -1,13 +1,33 @@
-// Archivo: obj_button/Step_0.gml
-var _mouse_x = device_mouse_x_to_gui(0);
-var _mouse_y = device_mouse_y_to_gui(0);
-var _hover = point_in_rectangle(_mouse_x, _mouse_y, 
-                           x - sprite_width/2, y - sprite_height/2,
-                           x + sprite_width/2, y + sprite_height/2);
+// Obtenemos coordenadas del mouse en la GUI
+var _mx = device_mouse_x_to_gui(0);
+var _my = device_mouse_y_to_gui(0);
 
-if (_hover && mouse_check_button_released(mb_left))
+// Si tenemos sprite, usamos su tamaño. Si no, usamos el manual.
+var _w = (sprite_index != -1) ? sprite_width : width;
+var _h = (sprite_index != -1) ? sprite_height : height;
+
+// Calcular bordes (asumiendo que la posición x,y es el CENTRO del botón)
+var _half_w = (_w * scale) / 2;
+var _half_h = (_h * scale) / 2;
+
+// 1. DETECCIÓN DE MOUSE
+if (_mx > x - _half_w && _mx < x + _half_w && _my > y - _half_h && _my < y + _half_h)
 {
-    my_script();
-    // Reemplace snd_click con su asset de sonido de clic si es diferente
-    // audio_play_sound(snd_click, 0, false); 
+    hovering = true;
+    scale = lerp(scale, 1.1, 0.1); // Efecto de crecer
+    
+    // 2. DETECCIÓN DE CLIC
+    if (device_mouse_check_button_pressed(0, mb_left)) 
+    {
+        audio_play_sound(snd_click, 1, false); // Si tienes sonido
+        if (is_method(action_script)) 
+        {
+            action_script();
+        }
+    }
+}
+else
+{
+    hovering = false;
+    scale = lerp(scale, 1.0, 0.1); // Volver a tamaño normal
 }
