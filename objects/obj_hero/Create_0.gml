@@ -1,6 +1,7 @@
 // Archivo: objects/obj_hero/Create_0.gml
 
-// Inicializar controlador de red
+// --- 1. INICIALIZACIÓN DE RED Y ESTATUS ---
+// Inicializar referencia al controlador de red
 global.network_controller = instance_find(obj_network_controller, 0);
 
 // Por defecto no somos nadie hasta comprobar lo contrario
@@ -28,32 +29,32 @@ if (instance_exists(global.network_controller))
     // CASO B: SOY CLIENTE (2)
     else if (_mode == 2)
     {
-        is_local_player = false; 
+        is_local_player = false;
         // Esperamos a que el servidor nos mande el paquete CONNECT_ACCEPT para volvernos true
     }
 }
 else
 {
-    // CASO C: NO EXISTE EL CONTROLADOR (Singleplayer puro)
+    // CASO C: NO EXISTE EL CONTROLADOR (Singleplayer puro sin obj_network_controller)
     is_local_player = true;
     net_player_id = 0;
 }
 
-// --- ESTADÍSTICAS ---
+// --- 2. ESTADÍSTICAS DEL HÉROE ---
 hitpoints_max = 10;
 hitpoints = hitpoints_max;
 
 nearest_enemy = undefined;
 nearest_distance = 1000;
 
-// Cooldowns
+// Cooldowns de habilidades
 hero_shoot_cooldown = 0;
 hero_swipe_cooldown = 30;
 hero_trail_cooldown = 30;
 
-// --- FUNCIONES DE ATAQUE ---
+// --- 3. FUNCIONES DE ATAQUE ---
 
-// Disparo manual
+// A. Disparo manual
 handle_manual_shoot = function()
 {
     if (!is_local_player) exit;
@@ -73,7 +74,7 @@ handle_manual_shoot = function()
             }
             else 
             {
-                // Si soy cliente (2), pido permiso
+                // Si soy cliente (2), pido permiso al servidor
                 var _buffer = buffer_create(64, buffer_fixed, 1);
                 buffer_write(_buffer, buffer_u8, NET_PACKET_TYPE.ATTACK_REQUEST);
                 buffer_write(_buffer, buffer_u8, net_player_id); 
@@ -84,14 +85,14 @@ handle_manual_shoot = function()
     }
 }
 
-// Ataque swipe
+// B. Ataque Swipe (Golpe circular)
 hero_swipe = function()
 {
-    // Si estamos en MP (Modo 2) y NO somos el servidor, salir. 
-    // Si es Modo 0 (Offline), permitimos que corra.
+    // Si estamos en MP (Modo 2) y NO somos el servidor, salir.
+    // Si es Modo 0 (Offline) o 1 (Host), permitimos que corra.
     if (instance_exists(global.network_controller) && global.network_controller.network_mode == 2) exit;
 
-	if (nearest_distance < 250)
+    if (nearest_distance < 250)
 	{
 		hero_swipe_cooldown = max(global.swipe[? "attack_speed"], 1);
 		if (global.swipe[? "unlocked"]) swipe_attack();
@@ -99,12 +100,13 @@ hero_swipe = function()
 	else hero_swipe_cooldown = 1;
 }
 
-// Ataque trail
+// C. Ataque Trail (Rastro)
 hero_trail = function()
 {
+    // Misma restricción: Solo Host u Offline calculan esto
     if (instance_exists(global.network_controller) && global.network_controller.network_mode == 2) exit;
 
-	if(nearest_distance < 300)
+    if(nearest_distance < 300)
 	{
 		hero_trail_cooldown = max(global.trail[? "attack_speed"], 1);
 		if(global.trail[? "unlocked"]) attack_trail();
@@ -112,5 +114,18 @@ hero_trail = function()
 	else hero_trail_cooldown = 1;
 }
 
-var _shadow = instance_create_layer(x, y, "Shadows", obj_shadow);
+// --- 4. CREACIÓN DE LA SOMBRA (CON PROTECCIÓN DE CAPA) ---
+
+// Definimos la capa ideal
+var _target_layer = "Shadows";
+
+// Verificamos si existe en la sala actual (evita crash en rm_menu)
+if (!layer_exists(_target_layer))
+{
+    // Si "Shadows" no existe, usamos la capa actual del héroe
+    _target_layer = layer;
+}
+
+// Creamos la sombra de forma segura
+var _shadow = instance_create_layer(x, y, _target_layer, obj_shadow);
 _shadow.owner_object = self;

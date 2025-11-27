@@ -14,3 +14,5 @@ show_healthbar = 0;
 var _shadow = instance_create_layer(x, y, "Shadows", obj_shadow);
 // Set shadow owner.
 _shadow.owner_object = self;
+
+// Identificación de red

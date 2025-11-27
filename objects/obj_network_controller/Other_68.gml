@@ -61,29 +61,30 @@ if (_type == network_type_data && !is_undefined(_buffer))
             }
         }
         
-        // --- CASO 2: INPUT DE MOVIMIENTO ---
+        // --- CASO 2: INPUT DE MOVIMIENTO (ACTUALIZADO - CLIENT AUTHORITY) ---
         else if (_packet_type == NET_PACKET_TYPE.MOVEMENT_INPUT && !is_undefined(_p_id))
         {
-            // Leer datos del paquete
+            // Leer datos del paquete (AHORA SON COORDENADAS ABSOLUTAS)
             var _id_recv = buffer_read(_buffer, buffer_u8); 
-            var _move_h = buffer_read(_buffer, buffer_s16);
-            var _move_v = buffer_read(_buffer, buffer_s16);
+            var _new_x   = buffer_read(_buffer, buffer_s16); // X real del cliente
+            var _new_y   = buffer_read(_buffer, buffer_s16); // Y real del cliente
+            var _new_sc  = buffer_read(_buffer, buffer_s8);  // Dirección (image_xscale)
             
-            // Buscar al héroe correcto y moverlo
+            // Buscar al héroe correcto y actualizar su posición
+            // Al hacer esto, el servidor acepta que el cliente dice la verdad sobre dónde está.
             with(obj_hero)
             {
-                // Usamos net_player_id para identificar
                 if (variable_instance_exists(id, "net_player_id") && net_player_id == _p_id)
                 {
-                    // Mover respetando colisiones
-                    if (place_free(x + _move_h, y)) x += _move_h;
-                    if (place_free(x, y + _move_v)) y += _move_v;
-                    
-                    // Girar sprite
-                    if (_move_h != 0) image_xscale = sign(_move_h);
+                    x = _new_x;
+                    y = _new_y;
+                    image_xscale = _new_sc;
                 }
             }
         }
+        
+        // --- (OPCIONAL) CASO: ATAQUE ---
+        // Si tienes implementado ATTACK_REQUEST, iría aquí con lógica similar
     }
     
     // ---------------------------------------------------------------------
@@ -96,9 +97,9 @@ if (_type == network_type_data && !is_undefined(_buffer))
         {
             var _assigned_id = buffer_read(_buffer, buffer_u8);
             
-            // >>> NUEVO: Guardar mi ID en el controlador para no olvidarlo al cambiar de Room <<<
+            // Guardar mi ID
             client_id = _assigned_id;
-            
+
             // Intentar usar la referencia guardada en el Room Start (identidad segura)
             if (variable_instance_exists(id, "local_hero_reference") && instance_exists(local_hero_reference))
             {
@@ -108,7 +109,7 @@ if (_type == network_type_data && !is_undefined(_buffer))
             }
             else 
             {
-                // Fallback: Buscar cualquier héroe sin ID (menos seguro pero funcional)
+                // Fallback: Buscar cualquier héroe sin ID
                 var _h = instance_find(obj_hero, 0);
                 if (instance_exists(_h)) {
                     _h.net_player_id = _assigned_id;
@@ -139,11 +140,12 @@ if (_type == network_type_data && !is_undefined(_buffer))
                     {
                         _found = true;
                         
-                        // >>> LÓGICA DE MOVIMIENTO SUAVE <<<
+                        // >>> LÓGICA DE MOVIMIENTO <<<
                         if (is_local_player) 
                         {
-                            // SI SOY YO: Solo acepto la posición del servidor si estoy MUY lejos (Lagazo)
-                            // Si la diferencia es pequeña, ignoro al servidor y confío en mi predicción local.
+                            // SI SOY YO: Solo acepto la posición del servidor si estoy MUY lejos (Reconciliación de Lag)
+                            // Como ahora enviamos nuestra posición real, esto solo ocurrirá si el servidor
+                            // nos teleporta o si hay un lag masivo.
                             if (point_distance(x, y, _ux, _uy) > 50) {
                                 x = _ux;
                                 y = _uy;
