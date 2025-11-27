@@ -1,32 +1,45 @@
 // Archivo: objects/obj_hero/Create_0.gml
 
 // Inicializar controlador de red
-global.network_controller = instance_find(obj_network_controller, 0); 
+global.network_controller = instance_find(obj_network_controller, 0);
 
-// CORRECCIÓN: Usamos 'net_player_id' para evitar conflicto con variable del sistema
+// Por defecto no somos nadie hasta comprobar lo contrario
 net_player_id = -1; 
-is_local_player = false; 
+is_local_player = false;
 
+// --- COMPROBACIÓN DE IDENTIDAD ---
 if (instance_exists(global.network_controller))
 {
-    if (global.network_controller.network_mode == 1) // Modo Servidor
+    var _mode = global.network_controller.network_mode;
+
+    // CASO A: SOY EL HOST (1) O ESTOY OFFLINE (0) PERO EL OBJETO EXISTE
+    if (_mode == 1 || _mode == 0) 
     {
-        net_player_id = 0; // Host es ID 0
-        is_local_player = true; 
+        is_local_player = true;
+        net_player_id = 0; // El Host/Singleplayer siempre es ID 0
         
-        // Registrar Host
-        var _map = global.network_controller.player_sockets;
-        _map[? -1] = net_player_id; 
-        global.network_controller.player_count++;
+        // Si somos específicamente el HOST, nos registramos en el mapa de sockets
+        if (_mode == 1) {
+            var _map = global.network_controller.player_sockets;
+            _map[? -1] = net_player_id; 
+            global.network_controller.player_count++;
+        }
+    }
+    // CASO B: SOY CLIENTE (2)
+    else if (_mode == 2)
+    {
+        is_local_player = false; 
+        // Esperamos a que el servidor nos mande el paquete CONNECT_ACCEPT para volvernos true
     }
 }
 else
 {
-    // Modo Singleplayer / Offline
+    // CASO C: NO EXISTE EL CONTROLADOR (Singleplayer puro)
     is_local_player = true;
     net_player_id = 0;
 }
 
+// --- ESTADÍSTICAS ---
 hitpoints_max = 10;
 hitpoints = hitpoints_max;
 
@@ -38,23 +51,29 @@ hero_shoot_cooldown = 0;
 hero_swipe_cooldown = 30;
 hero_trail_cooldown = 30;
 
+// --- FUNCIONES DE ATAQUE ---
+
 // Disparo manual
 handle_manual_shoot = function()
 {
     if (!is_local_player) exit;
-    
+
     if (nearest_distance < 1000)
     {
         if (global.shooting[? "unlocked"])
         {
-            if (!instance_exists(global.network_controller) || global.network_controller.network_mode == 1) 
+            // Verificamos si el controlador existe Y qué modo es
+            var _net_mode = 0;
+            if (instance_exists(global.network_controller)) _net_mode = global.network_controller.network_mode;
+
+            // Si es Offline (0) o Servidor (1), disparamos directo
+            if (_net_mode == 0 || _net_mode == 1) 
             {
-                // Si soy servidor o offline, disparo directo
-                shooting_attack(); 
+                shooting_attack();
             }
             else 
             {
-                // Si soy cliente, pido permiso
+                // Si soy cliente (2), pido permiso
                 var _buffer = buffer_create(64, buffer_fixed, 1);
                 buffer_write(_buffer, buffer_u8, NET_PACKET_TYPE.ATTACK_REQUEST);
                 buffer_write(_buffer, buffer_u8, net_player_id); 
@@ -65,13 +84,14 @@ handle_manual_shoot = function()
     }
 }
 
-// Ataque swipe (Solo Servidor lo gestiona en MP)
+// Ataque swipe
 hero_swipe = function()
 {
-    // Si estamos en MP y NO somos el servidor, salir
+    // Si estamos en MP (Modo 2) y NO somos el servidor, salir. 
+    // Si es Modo 0 (Offline), permitimos que corra.
     if (instance_exists(global.network_controller) && global.network_controller.network_mode == 2) exit;
 
-    if (nearest_distance < 250)
+	if (nearest_distance < 250)
 	{
 		hero_swipe_cooldown = max(global.swipe[? "attack_speed"], 1);
 		if (global.swipe[? "unlocked"]) swipe_attack();
@@ -79,12 +99,12 @@ hero_swipe = function()
 	else hero_swipe_cooldown = 1;
 }
 
-// Ataque trail (Solo Servidor lo gestiona en MP)
+// Ataque trail
 hero_trail = function()
 {
     if (instance_exists(global.network_controller) && global.network_controller.network_mode == 2) exit;
 
-    if(nearest_distance < 300)
+	if(nearest_distance < 300)
 	{
 		hero_trail_cooldown = max(global.trail[? "attack_speed"], 1);
 		if(global.trail[? "unlocked"]) attack_trail();
